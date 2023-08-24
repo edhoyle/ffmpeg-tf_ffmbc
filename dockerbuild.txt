@@ -1,0 +1,1 @@
+docker build --compress --no-cache --force-rm --squash  -t sr/ffmbc_ffmpeg6_cuda11.4.1_cudnn8 ffmpeg-tensorflow/

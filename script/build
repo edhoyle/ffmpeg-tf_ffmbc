@@ -1,0 +1,71 @@
+#!/bin/bash
+#shellcheck disable=SC2016
+
+set -o errexit
+set -o pipefail
+set -o nounset
+set -o xtrace
+
+# Expose cuda to linker
+ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/lib/libcuda.so.1
+
+# Install libtensorflow
+curl -fsSL https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-"$1".tar.gz | tar -xzC /usr/local -f -
+
+# Install libx264 with support 10bits
+cd ~
+git clone --depth 1 https://code.videolan.org/videolan/x264.git
+cd x264
+./configure --enable-static --enable-pic --bit-depth=10
+make -j$(nproc)
+make install
+
+#FFMBC
+cd ~
+git clone https://github.com/bcoudurier/FFmbc
+cd FFmbc
+./configure --enable-gpl --enable-nonfree --enable-shared \
+	--enable-postproc --enable-runtime-cpudetect \
+	--enable-frei0r --enable-libdc1394 --enable-libfaac \
+	--enable-libgsm --enable-libmp3lame --enable-libspeex \
+	--enable-libtheora --enable-libvorbis --enable-libvpx \
+	--enable-libx264 --enable-pthreads --enable-zlib \
+	--disable-doc
+make -j$(nproc)
+make install 
+ldconfig
+
+# Install ffmpeg
+TEMPDIR="$(mktemp -d)"
+trap 'rm -r "$TEMPDIR"' EXIT
+
+curl -fsSL https://ffmpeg.org/releases/ffmpeg-"$2".tar.bz2 | tar --strip 1 -xjC "$TEMPDIR" -f -
+pushd "$TEMPDIR"
+./configure \
+ --pkg-config-flags='--static' \
+ --extra-libs='-lpthread -lm' \
+ --enable-gpl \
+ --enable-gnutls \
+ --enable-libass \
+ --enable-libfdk-aac \
+ --enable-libfreetype \
+ --enable-libmp3lame \
+ --enable-libopus \
+ --enable-libvorbis \
+ --enable-libvpx \
+ --enable-libx264 \
+ --enable-libx265 \
+ --enable-libtensorflow \
+ --enable-nonfree
+make -j "$(nproc)"
+make install
+popd
+
+# Persist dependencies
+mkdir -p /deps/usr/local/lib
+mv /usr/local/lib/libtensorflow* /deps/usr/local/lib
+ldd /usr/local/bin/ffmpeg | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I % sh -c 'mkdir -p $(dirname /deps%); cp % /deps%;'
+ldd /usr/local/bin/ffmbc | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I % sh -c 'mkdir -p $(dirname /deps%); cp % /deps%;'
+
+
+
