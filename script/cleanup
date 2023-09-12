@@ -11,7 +11,7 @@ then
   apt-get -qy remove --purge "$@"
 fi
 
-if [[ "$*" == *' python3.6 '* ]]
+if [[ "$*" == *' python3.8 '* ]]
 then
   apt-get -qy remove --purge software-properties-common
 fi
