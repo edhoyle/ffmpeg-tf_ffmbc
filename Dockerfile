@@ -61,6 +61,7 @@ ARG DEPENDENCIES="\
   #libvpx-dev \
   libgavl1 \
   libx264-dev\
+  mediainfo \
 "
 
 ENV DEBIAN_FRONTEND=noninteractive \
