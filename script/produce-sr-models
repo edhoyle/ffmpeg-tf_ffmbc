@@ -26,3 +26,5 @@ cp /deps/usr/local/lib/*.* /usr/local/lib/
 popd
 rm -rf sr
 popd
+
+python3.8 -m pip install dask[complete] google-cloud-pubsub
