@@ -1,7 +1,7 @@
 ARG VERSION_CUDA=11.4.3-cudnn8
 ARG VERSION_UBUNTU=18.04
 
-FROM nvidia/cuda:${VERSION_CUDA}-devel-ubuntu${VERSION_UBUNTU} as build
+FROM nvidia/cuda:${VERSION_CUDA}-runtime-ubuntu${VERSION_UBUNTU} as build
 
 ARG VERSION_FFMPEG=4.4.4
 ARG VERSION_LIBTENSORFLOW=2.5.0
@@ -35,7 +35,6 @@ ARG DEPENDENCIES="\
   libx265-dev \
   nasm \
   pkg-config \
-  python3 \
   python3-pip \
   python3.8 \
   #python3.10-dev \
@@ -49,16 +48,13 @@ ARG DEPENDENCIES="\
   #libvorbis-dev \
   libdc1394-22-dev \
   libsdl1.2-dev \
-  #zlib1g-dev \
   texi2html \
   libfaac-dev \
-  #libmp3lame-dev \
   libtheora-dev \
   libopencore-amrnb-dev \
   libopencore-amrwb-dev \
   frei0r-plugins-dev \
   libopencv-dev \
-  #libvpx-dev \
   libgavl1 \
   libx264-dev\
   mediainfo \
@@ -80,34 +76,3 @@ RUN set -o errexit \
  && echo 'alias python="python3.8"' >> /etc/bash.bashrc 
 
 ENTRYPOINT ["/bin/bash"]
-
-
-FROM nvidia/cuda:${VERSION_CUDA}-runtime-ubuntu${VERSION_UBUNTU}
-
-LABEL authors="Vít Novotný <witiko@mail.muni.cz>,Mikuláš Bankovič <456421@mail.muni.cz>,Dirk Lüth <dirk.lueth@gmail.com>" \
-       org.label-schema.docker.dockerfile="/Dockerfile" \
-       org.label-schema.name="jetson.ffmpeg"
-
-ARG DEPENDENCIES="\
-   libgomp1 \
- "
-
-ENV DEBIAN_FRONTEND=noninteractive \
-     TERM=xterm
-
-COPY script/ /usr/local/sbin/
-
-COPY --from=build /deps /
-COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
-COPY --from=build /usr/local/bin/ffmbc /usr/local/bin/ffmbc
-COPY --from=build /usr/local/share/ffmpeg-tensorflow-models/ /usr/local/share/ffmpeg-tensorflow-models/
-
-RUN set -o errexit \
-  && set -o xtrace \
-  && bootstrap-prepare \
-  && bootstrap-install ${DEPENDENCIES} \
-  && ln -s /usr/local/share/ffmpeg-tensorflow-models/ /models \
-#  && cleanup
-
-# ENTRYPOINT ["/usr/local/bin/ffmpeg"]
